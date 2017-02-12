@@ -8,7 +8,7 @@
  * $wechat = new WechatSubscribedAccountSDK();
  * $wechat->checkSignature();
  *
- * $type = $wechat->getRevType();
+ * $type = $wechat->getMsg()->getRevType();
  * switch($type) {
  *      case WechatSubscribedAccountSDK::MSGTEXT:
  *          $wechat->text('reply to you')->reply();
@@ -18,7 +18,6 @@
  *          break;
  * }
  */
-
 class WechatSubscribedAccountSDK
 {
     private $_receiveData;
@@ -29,24 +28,23 @@ class WechatSubscribedAccountSDK
     const MSGLOCA = 'location';
     const MSGEVENT = 'event';
 
-    private function checkSignature()
+    public function checkSignature()
     {
-        $sign = $_GET['signature'];
-        $ts = $_GET['timestamp'];
-        $nonce = $_GET['nonce'];
-        $token = $_GET['token'];
+        $sign = isset($_GET['signature']) ? $_GET['signature'] : '';
+        $ts = isset($_GET['timestamp']) ? $_GET['timestamp'] : '';
+        $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : '';
+        $token = 'weixin';
 
         $param = array($ts, $nonce, $token);
-        ksort($param);
+        sort($param, SORT_STRING);
 
         $param = sha1(implode('', $param));
 
         if ($param === $sign) {
             echo $_GET['echostr'];
 
-            $this->getMsg();
         } else {
-            echo 'no access';
+            die('no access');
         }
     }
 
@@ -77,12 +75,12 @@ class WechatSubscribedAccountSDK
                 // wipe the key is int
                 if (is_array($list)):
                     if (!is_numeric($k))
-                        $innerStr .= "<$k>" . inner($list) . "</$k>\n";
+                        $innerStr .= "<$k>" . inner($list) . "</$k>\r\n";
                     else
                         $innerStr .= inner($list);
                 else:
                     if (!is_numeric($k))
-                        $innerStr .= "<$k>" . $list . "</$k>\n";
+                        $innerStr .= "<$k>" . $list . "</$k>\r\n";
                     else
                         $innerStr .= $list;
                 endif;
@@ -97,7 +95,8 @@ class WechatSubscribedAccountSDK
     }
 
     /**
-     *  get sender’s msg
+     *  get sender’s msg(openid)
+     * eg: oDsxCuBbbPPNjUES2vbNUKYH11D4
      */
     public function getRecFrom()
     {
@@ -107,8 +106,10 @@ class WechatSubscribedAccountSDK
             return false;
         }
     }
+
     /**
      *  get receive’s msg
+     * eg: gh_c8da4ce1e9s
      */
     public function getRecTo()
     {
@@ -119,7 +120,10 @@ class WechatSubscribedAccountSDK
         }
     }
 
-    public function getRevType()
+    /**eg: text|news|...
+     * @return array|bool
+     */
+    public function getRecType()
     {
         if (isset($this->_receiveData['MsgType'])) {
             return $this->_receiveData['MsgType'];
@@ -128,7 +132,7 @@ class WechatSubscribedAccountSDK
         }
     }
 
-    public function getRevTime()
+    public function getRecTime()
     {
         if (isset($this->_receiveData['CreateTime'])) {
             return $this->_receiveData['CreateTime'];
@@ -137,7 +141,10 @@ class WechatSubscribedAccountSDK
         }
     }
 
-    public function getRevID()
+    /**get MsgId
+     * @return array|bool
+     */
+    public function getRecID()
     {
         if (isset($this->_receiveData['MsgId'])) {
             return $this->_receiveData['MsgId'];
@@ -146,6 +153,9 @@ class WechatSubscribedAccountSDK
         }
     }
 
+    /**get sender reply's content
+     * @return array|bool
+     */
     public function getRecContent()
     {
         if (isset($this->_receiveData['Content'])) {
@@ -157,6 +167,9 @@ class WechatSubscribedAccountSDK
         }
     }
 
+    /**eg: subscribe
+     * @return array|bool
+     */
     public function getRecEvent()
     {
         if (isset($this->_receiveData['Event'])) {
@@ -172,18 +185,45 @@ class WechatSubscribedAccountSDK
         }
     }
 
-    private function getMsg()
+    private static function arrayToString($arr)
+    {
+        if (!is_array($arr)) {
+            return false;
+        }
+        $str = '';
+        foreach ($arr as $key => $value) {
+            if (is_array($value)) {
+                $str .= $key . ":" . self::arrayToString($value);
+            } else {
+                $str .= " " . $key . ":" . $value . " ";
+            }
+        }
+        return '[' . $str . ']';
+    }
+
+    /**
+     * @param $msgthe log what you want look
+     */
+    private function log($msg)
+    {
+        $fd = fopen('error.txt', 'a');
+
+        $str = '[' . date('Y-m-d H:i:s') . ']' . $msg . "\r\n";
+        fwrite($fd, $str);
+        fclose($fd);
+    }
+
+    public function getMsg()
     {
         $data = $GLOBALS['HTTP_RAW_POST_DATA'];
-        $xml = simplexml_load_string($data);
-        $this->_receiveData = $xml;
-
-        return $this->xmlToArray($xml);
+        $this->_receiveData = (array)(simplexml_load_string($data, 'SimpleXMLElement', LIBXML_NOCDATA));
+        $this->log(self::arrayToString($this->_receiveData));
+        return $this;
     }
 
     // For Subscribed Account not support media implement,
     // reply temporarily write text and multi-news
-    
+
     /** Active response text information
      * @param $content
      */
@@ -232,10 +272,10 @@ class WechatSubscribedAccountSDK
             'Articles' => array()
         );
         foreach ($arr as $item) {
-            array_push($sendArr['Articles'], array('Item' => $item));
+            array_push($sendArr['Articles'], array('item' => $item));
         }
-
         $this->_sendData = $this->arrayToXml($sendArr);
+//        $this->log($this->_sendData);
 
         return $this;
     }
@@ -244,7 +284,7 @@ class WechatSubscribedAccountSDK
      * Example: $this->text('msg')->reply(); or $this->reply('msg')
      * @param $msg set _sendData,directly excute reply,default with empty
      */
-    public function reply($msg)
+    public function reply($msg = '')
     {
         // reset _sendData
         if (!empty($msg)) {
