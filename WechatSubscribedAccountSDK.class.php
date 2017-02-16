@@ -36,6 +36,10 @@ class WechatSubscribedAccountSDK
 
     public function checkSignature()
     {
+    	// 在非服务器配置更改时，不验证签名
+    	if (empty($_GET['echostr'])) {
+    		return true;
+    	}
         $sign = isset($_GET['signature']) ? $_GET['signature'] : '';
         $ts = isset($_GET['timestamp']) ? $_GET['timestamp'] : '';
         $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : '';
@@ -47,7 +51,7 @@ class WechatSubscribedAccountSDK
         $param = sha1(implode('', $param));
 
         if ($param === $sign) {
-            echo $_GET['echostr'];
+            die($_GET['echostr']);
 
         } else {
             die('no access');
