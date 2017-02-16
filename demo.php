@@ -8,7 +8,7 @@
 
 include_once 'WechatSubscribedAccountSDK.class.php';
 
-$wechat = new WechatSubscribedAccountSDK();
+$wechat = new WechatSubscribedAccountSDK('weixin');
 $wechat->checkSignature();
 
 $type = $wechat->getMsg()->getRecType();

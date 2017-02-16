@@ -22,18 +22,24 @@ class WechatSubscribedAccountSDK
 {
     private $_receiveData;
     private $_sendData;
+    private $token;
     const MSGTEXT = 'text';
     const MSGIMAGE = 'image';
     const MSGVOICE = 'voice';
     const MSGLOCA = 'location';
     const MSGEVENT = 'event';
 
+    public function __construct($token)
+    {
+        $this->token = $token;
+    }
+
     public function checkSignature()
     {
         $sign = isset($_GET['signature']) ? $_GET['signature'] : '';
         $ts = isset($_GET['timestamp']) ? $_GET['timestamp'] : '';
         $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : '';
-        $token = 'weixin';
+        $token = $this->token;
 
         $param = array($ts, $nonce, $token);
         sort($param, SORT_STRING);
