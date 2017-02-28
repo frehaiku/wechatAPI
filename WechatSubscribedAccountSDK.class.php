@@ -104,6 +104,17 @@ class WechatSubscribedAccountSDK
         return $str;
     }
 
+    /** get send list
+     * @return array
+     */
+    public function getRecMsg()
+    {
+        if (!empty($this->_receiveData)) {
+            return $this->_receiveData;
+        } else {
+            return false;
+        }
+    }
     /**
      *  get sender’s msg(openid)
      * eg: oDsxCuBbbPPNjUES2vbNUKYH11D4
@@ -170,8 +181,8 @@ class WechatSubscribedAccountSDK
     {
         if (isset($this->_receiveData['Content'])) {
             return $this->_receiveData['Content'];
-        } else if (isset($this->_receiveData['Recongnition'])) {
-            return $this->_receiveData['Recongnition'];
+        } else if (isset($this->_receiveData['Recognition'])) {
+            return $this->_receiveData['Recognition'];
         } else {
             return false;
         }
