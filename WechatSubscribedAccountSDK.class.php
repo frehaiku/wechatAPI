@@ -8,7 +8,7 @@
  * $wechat = new WechatSubscribedAccountSDK();
  * $wechat->checkSignature();
  *
- * $type = $wechat->getMsg()->getRevType();
+ * $type = $wechat->getMsg()->getRecType();
  * switch($type) {
  *      case WechatSubscribedAccountSDK::MSGTEXT:
  *          $wechat->text('reply to you')->reply();
@@ -36,10 +36,10 @@ class WechatSubscribedAccountSDK
 
     public function checkSignature()
     {
-    	// 在非服务器配置更改时，不验证签名
-    	if (empty($_GET['echostr'])) {
-    		return true;
-    	}
+        // 在非服务器配置更改时，不验证签名
+        if (empty($_GET['echostr'])) {
+            return true;
+        }
         $sign = isset($_GET['signature']) ? $_GET['signature'] : '';
         $ts = isset($_GET['timestamp']) ? $_GET['timestamp'] : '';
         $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : '';
@@ -115,6 +115,7 @@ class WechatSubscribedAccountSDK
             return false;
         }
     }
+
     /**
      *  get sender’s msg(openid)
      * eg: oDsxCuBbbPPNjUES2vbNUKYH11D4
@@ -194,9 +195,12 @@ class WechatSubscribedAccountSDK
     public function getRecEvent()
     {
         if (isset($this->_receiveData['Event'])) {
-            $arr[] = $this->_receiveData['Event'];
-        } else if (isset($this->_receiveData['EventKey'])) {
-            $arr[] = $this->_receiveData['EventKey'];
+            $arr['Event'] = $this->_receiveData['Event'];
+        }
+        if (isset($this->_receiveData['EventKey']) &&
+            empty($this->_receiveData['EventKey'])
+        ) {
+            $arr['EventKey'] = $this->_receiveData['EventKey'];
         }
 
         if (isset($arr) && sizeof($arr)) {
